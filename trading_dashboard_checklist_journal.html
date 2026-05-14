@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trading Dashboard</title>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #0f172a; color: #f8fafc; }
+    header { padding: 18px; background: #020617; text-align: center; border-bottom: 1px solid #334155; }
+    header h1 { margin: 0; font-size: 24px; }
+    header p { margin: 6px 0 0; color: #cbd5e1; font-size: 14px; }
+    .container { max-width: 1100px; margin: auto; padding: 16px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stat { background: #111827; border: 1px solid #334155; border-radius: 16px; padding: 14px; text-align: center; }
+    .stat h3 { margin: 0; font-size: 13px; color: #cbd5e1; }
+    .stat div { margin-top: 8px; font-size: 24px; font-weight: bold; color: #facc15; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card { background: #111827; border: 1px solid #334155; border-radius: 18px; overflow: hidden; margin-bottom: 16px; }
+    .card-title { background: #1e293b; padding: 13px; font-weight: bold; color: #facc15; }
+    .card-body { padding: 14px; }
+    .status { text-align: center; padding: 14px; border-radius: 14px; font-weight: bold; margin-bottom: 12px; font-size: 18px; background: #7f1d1d; color: #fecaca; }
+    .status.ready { background: #064e3b; color: #bbf7d0; }
+    .progress-wrap { background: #1e293b; border-radius: 999px; overflow: hidden; height: 12px; margin-bottom: 8px; }
+    .progress { height: 100%; width: 0%; background: #22c55e; transition: .3s; }
+    .count { text-align: center; font-size: 13px; color: #cbd5e1; margin-bottom: 12px; }
+    label.check { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #243244; font-size: 14px; line-height: 1.35; }
+    input[type="checkbox"] { width: 19px; height: 19px; accent-color: #22c55e; flex-shrink: 0; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .full { grid-column: 1 / -1; }
+    input, select, textarea { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; font-size: 14px; }
+    textarea { min-height: 74px; resize: vertical; }
+    .buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+    button { padding: 12px; border: none; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; }
+    .save { background: #22c55e; color: #052e16; }
+    .download { background: #38bdf8; color: #082f49; }
+    .reset { background: #334155; color: white; }
+    .clear { background: #ef4444; color: white; }
+    .journal-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .journal-table th, .journal-table td { border-bottom: 1px solid #334155; padding: 9px; text-align: left; vertical-align: top; }
+    .journal-table th { color: #facc15; background: #1e293b; position: sticky; top: 0; }
+    .table-wrap { max-height: 360px; overflow: auto; }
+    .win { color: #86efac; font-weight: bold; }
+    .loss { color: #fca5a5; font-weight: bold; }
+    .be { color: #93c5fd; font-weight: bold; }
+    .note { padding: 14px; border-radius: 14px; background: #1e293b; color: #cbd5e1; font-size: 14px; line-height: 1.5; }
+    @media (max-width: 850px) {
+      .grid, .stats, .buttons { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .full { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Trading Dashboard</h1>
+  <p>Checklist + Journal + Stats in one offline dashboard</p>
+</header>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat"><h3>Total Trades</h3><div id="totalTrades">0</div></div>
+    <div class="stat"><h3>Win Rate</h3><div id="winRate">0%</div></div>
+    <div class="stat"><h3>Total P/L</h3><div id="totalPL">0</div></div>
+    <div class="stat"><h3>Avg Checklist</h3><div id="avgChecklist">0%</div></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div class="card-title">Pre-Entry Checklist</div>
+        <div class="card-body">
+          <div id="status" class="status">❌ NO TRADE</div>
+          <div class="progress-wrap"><div id="progress" class="progress"></div></div>
+          <div id="count" class="count">0 / 13 checked</div>
+
+          <label class="check"><input type="checkbox" class="checkItem"> Clear trend + key support/resistance</label>
+          <label class="check"><input type="checkbox" class="checkItem"> May liquidity sweep / valid setup story</label>
+          <label class="check"><input type="checkbox" class="checkItem"> May BOS/CHOCH + displacement</label>
+          <label class="check"><input type="checkbox" class="checkItem"> May valid FVG/retest</label>
+          <label class="check"><input type="checkbox" class="checkItem"> Hindi late ang entry</label>
+          <label class="check"><input type="checkbox" class="checkItem"> May exact SL at TP</label>
+          <label class="check"><input type="checkbox" class="checkItem"> Minimum 1:2 RR</label>
+          <label class="check"><input type="checkbox" class="checkItem"> Accepted ang possible loss</label>
+          <label class="check"><input type="checkbox" class="checkItem"> Calm, walang revenge o FOMO</label>
+          <label class="check"><input type="checkbox" class="checkItem"> Hindi naghahabol ng losses</label>
+          <label class="check"><input type="checkbox" class="checkItem"> May BE at partial TP plan</label>
+          <label class="check"><input type="checkbox" class="checkItem"> Alam kailan invalidated ang trade</label>
+          <label class="check"><input type="checkbox" class="checkItem"> Complete lahat bago mag-entry</label>
+
+          <button class="reset" style="width:100%; margin-top:12px;" onclick="resetChecklist()">Reset Checklist</button>
+        </div>
+      </div>
+
+      <div class="note">
+        <b>Golden Rule:</b> Kapag hindi 100% checklist, NO TRADE.  
+        Ito muna ang protection mo laban sa impulse entry.
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-title">Trade Journal Form</div>
+        <div class="card-body">
+          <div class="form-grid">
+            <input id="pair" placeholder="Pair" value="XAUUSD">
+            <select id="direction">
+              <option value="">Direction</option>
+              <option>Long</option>
+              <option>Short</option>
+            </select>
+            <input id="entry" placeholder="Entry Price">
+            <input id="sl" placeholder="Stop Loss">
+            <input id="tp" placeholder="Take Profit">
+            <input id="exitPrice" placeholder="Exit Price">
+            <select id="result">
+              <option value="">Result</option>
+              <option>Win</option>
+              <option>Loss</option>
+              <option>BE</option>
+            </select>
+            <input id="pl" placeholder="Profit/Loss amount">
+            <select id="emotion">
+              <option value="">Emotion</option>
+              <option>Calm</option>
+              <option>Nervous</option>
+              <option>FOMO</option>
+              <option>Revenge Mode</option>
+              <option>Confident</option>
+            </select>
+            <select id="followedPlan">
+              <option value="">Followed Plan?</option>
+              <option>Yes</option>
+              <option>No</option>
+              <option>Partial</option>
+            </select>
+            <textarea id="setupNotes" class="full" placeholder="Setup notes: HTF bias, liquidity sweep, BOS/CHOCH, FVG..."></textarea>
+            <textarea id="lesson" class="full" placeholder="Lesson / mistake / improvement"></textarea>
+          </div>
+
+          <div class="buttons">
+            <button class="save" onclick="saveTrade()">Save Trade</button>
+            <button class="download" onclick="downloadCSV()">Export CSV</button>
+            <button class="reset" onclick="clearForm()">Clear Form</button>
+            <button class="clear" onclick="clearAllTrades()">Clear All</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Saved Trading Journal</div>
+    <div class="table-wrap">
+      <table class="journal-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Pair</th><th>Dir</th><th>Entry</th><th>SL</th><th>TP</th><th>Exit</th><th>Result</th><th>P/L</th><th>Checklist</th><th>Emotion</th><th>Plan</th><th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="journalBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const checks = document.querySelectorAll('.checkItem');
+
+function updateChecklist() {
+  const total = checks.length;
+  const checked = document.querySelectorAll('.checkItem:checked').length;
+  const percent = Math.round((checked / total) * 100);
+  document.getElementById('progress').style.width = percent + "%";
+  document.getElementById('count').textContent = checked + " / " + total + " checked";
+
+  const status = document.getElementById('status');
+  if (checked === total) {
+    status.textContent = "✅ READY TO TRADE";
+    status.classList.add("ready");
+  } else {
+    status.textContent = "❌ NO TRADE";
+    status.classList.remove("ready");
+  }
+}
+
+function checklistScore() {
+  const total = checks.length;
+  const checked = document.querySelectorAll('.checkItem:checked').length;
+  return { checked, total, percent: Math.round((checked / total) * 100) };
+}
+
+function getTrades() {
+  return JSON.parse(localStorage.getItem("fullTradingDashboard") || "[]");
+}
+
+function setTrades(trades) {
+  localStorage.setItem("fullTradingDashboard", JSON.stringify(trades));
+}
+
+function saveTrade() {
+  const score = checklistScore();
+  const trade = {
+    date: new Date().toLocaleString(),
+    pair: document.getElementById('pair').value,
+    direction: document.getElementById('direction').value,
+    entry: document.getElementById('entry').value,
+    sl: document.getElementById('sl').value,
+    tp: document.getElementById('tp').value,
+    exitPrice: document.getElementById('exitPrice').value,
+    result: document.getElementById('result').value,
+    pl: document.getElementById('pl').value,
+    checklist: score.checked + "/" + score.total,
+    checklistPercent: score.percent,
+    status: score.percent === 100 ? "READY" : "NO TRADE",
+    emotion: document.getElementById('emotion').value,
+    followedPlan: document.getElementById('followedPlan').value,
+    setupNotes: document.getElementById('setupNotes').value.replace(/\n/g, " "),
+    lesson: document.getElementById('lesson').value.replace(/\n/g, " ")
+  };
+
+  const trades = getTrades();
+  trades.push(trade);
+  setTrades(trades);
+  renderJournal();
+  updateStats();
+  alert("Trade saved sa browser. Export CSV para ilagay sa Excel.");
+}
+
+function renderJournal() {
+  const trades = getTrades();
+  const body = document.getElementById('journalBody');
+  if (trades.length === 0) {
+    body.innerHTML = '<tr><td colspan="13">No saved trades yet.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = trades.slice().reverse().map(t => {
+    let resultClass = "";
+    if (t.result === "Win") resultClass = "win";
+    if (t.result === "Loss") resultClass = "loss";
+    if (t.result === "BE") resultClass = "be";
+    return `
+      <tr>
+        <td>${t.date}</td>
+        <td>${t.pair || ""}</td>
+        <td>${t.direction || ""}</td>
+        <td>${t.entry || ""}</td>
+        <td>${t.sl || ""}</td>
+        <td>${t.tp || ""}</td>
+        <td>${t.exitPrice || ""}</td>
+        <td class="${resultClass}">${t.result || ""}</td>
+        <td>${t.pl || ""}</td>
+        <td>${t.checklist} (${t.checklistPercent}%)</td>
+        <td>${t.emotion || ""}</td>
+        <td>${t.followedPlan || ""}</td>
+        <td>${t.setupNotes || ""} ${t.lesson ? " | Lesson: " + t.lesson : ""}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function updateStats() {
+  const trades = getTrades();
+  document.getElementById('totalTrades').textContent = trades.length;
+
+  const wins = trades.filter(t => t.result === "Win").length;
+  const losses = trades.filter(t => t.result === "Loss").length;
+  const counted = wins + losses;
+  const winRate = counted ? Math.round((wins / counted) * 100) : 0;
+  document.getElementById('winRate').textContent = winRate + "%";
+
+  const totalPL = trades.reduce((sum, t) => sum + (parseFloat(t.pl) || 0), 0);
+  document.getElementById('totalPL').textContent = totalPL.toFixed(2);
+
+  const avgChecklist = trades.length
+    ? Math.round(trades.reduce((sum, t) => sum + (parseFloat(t.checklistPercent) || 0), 0) / trades.length)
+    : 0;
+  document.getElementById('avgChecklist').textContent = avgChecklist + "%";
+}
+
+function downloadCSV() {
+  const trades = getTrades();
+  if (trades.length === 0) {
+    alert("Wala pang saved trade.");
+    return;
+  }
+
+  const headers = ["Date","Pair","Direction","Entry","SL","TP","Exit","Result","ProfitLoss","Checklist","ChecklistPercent","Status","Emotion","FollowedPlan","SetupNotes","Lesson"];
+  const rows = trades.map(t => [t.date,t.pair,t.direction,t.entry,t.sl,t.tp,t.exitPrice,t.result,t.pl,t.checklist,t.checklistPercent,t.status,t.emotion,t.followedPlan,t.setupNotes,t.lesson]);
+
+  const csv = [headers, ...rows]
+    .map(row => row.map(field => `"${String(field || "").replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "trading_dashboard_journal.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function resetChecklist() {
+  checks.forEach(c => c.checked = false);
+  updateChecklist();
+}
+
+function clearForm() {
+  ["direction","entry","sl","tp","exitPrice","result","pl","emotion","followedPlan","setupNotes","lesson"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  document.getElementById('pair').value = "XAUUSD";
+}
+
+function clearAllTrades() {
+  if (confirm("Burahin lahat ng saved trades sa browser?")) {
+    localStorage.removeItem("fullTradingDashboard");
+    renderJournal();
+    updateStats();
+  }
+}
+
+checks.forEach(c => c.addEventListener("change", updateChecklist));
+updateChecklist();
+renderJournal();
+updateStats();
+</script>
+</body>
+</html>
